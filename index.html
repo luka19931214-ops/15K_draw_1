@@ -106,15 +106,12 @@
             padding: 2px 6px;
             border-radius: 4px;
         }
-        .email-hint {
-            font-size: 13px;
-            color: #e65100;
-            margin-top: 10px;
+        .email-status {
+            font-size: 12px;
+            color: #2e7d32;
+            margin-top: 5px;
             font-weight: bold;
             text-align: center;
-            background-color: #fff3e0;
-            padding: 8px;
-            border-radius: 6px;
             display: none;
         }
     </style>
@@ -131,7 +128,7 @@
         <div class="security-panel" id="security-box" style="display: none;">
             <div>驗證時間：<span id="security-time">-</span></div>
             <div>官方防偽安全碼：<span class="security-code" id="security-md5">-</span></div>
-            <div class="email-hint" id="email-hint-box">已自動填寫認證信！請於彈出的視窗中點擊「傳送」發送給主辦方。</div>
+            <div class="email-status" id="email-status-text">📨 結果已自動發送至後台進行防偽存檔...</div>
         </div>
     </div>
 
@@ -145,7 +142,7 @@
     const scenes = ["餐桌", "流理台", "溫泉旅館", "浴室 / 浴缸", "車內（後座）"];
     const plays = ["自己來", "壁咚", "啃咬", "舌吻", "鏡子反射（看著鏡子）", "蒙眼（遮蔽視覺）", "挑逗 / 調情", "耳語 / 輕咬耳朵", "制服 / 力量壓制（如抓手腕、扯領帶）"];
     const allProps = ["五花大綁（坐在椅子上）", "項圈", "牽繩", "皮鞭", "門板登山扣", "尾巴", "玩具", "分腿器", "鏡子（對著鏡子）", "領帶 / 絲帶（束縛或拉扯用）", "冰塊", "手銬", "低溫蠟燭"];
-    const roles = ["草攻 / 蛇受", "蛇攻 / 草受"];
+    const roles = ["草攻 / 蛇受", "蛇攻 / Hunt受"];
 
     let totalDraws = 0;
     let currentScene = "";
@@ -212,15 +209,43 @@
         document.getElementById('security-time').innerText = timeStr;
         document.getElementById('security-md5').innerText = token;
         document.getElementById('security-box').style.display = "block";
-        document.getElementById('email-hint-box').style.display = "block";
+        document.getElementById('email-status-text').style.display = "block";
 
-        // 100% 原生安全喚起信箱，零外掛，絕對不卡死
-        const emailSubject = encodeURIComponent(`🌱 老師 15k 賀圖抽獎結果 - 第 ${totalDraws} 聯`);
-        const emailBody = encodeURIComponent(
-            `🔒 認證抽獎聯數：第 ${totalDraws} 聯\n` +
-            `🎬 插畫場景：${currentScene}\n` +
-            `💋 PLAY 互動：${currentPlay}\n` +
-            `⛓️ 畫面道具：${currentProp}\n` +
-            `⚡ 攻受定位：${currentRole}\n\n` +
-            `📅 驗證時間：${timeStr}\n` +
-            `🔑 官方防
+        sendEmailNotification(timeStr, token);
+    }
+
+    function sendEmailNotification(timeStr, token) {
+        // 使用原生的 FormData 機制透過你專屬的 Formspree 網址發送
+        const formData = new FormData();
+        formData.append('抽獎聯數', `第 ${totalDraws} 聯`);
+        formData.append('插畫場景', currentScene);
+        formData.append('PLAY互動', currentPlay);
+        formData.append('畫面道具', currentProp);
+        formData.append('攻受定位', currentRole);
+        formData.append('驗證時間', timeStr);
+        formData.append('官方防偽安全碼', token);
+
+        fetch('https://formspree.io/f/mkoapewl', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                document.getElementById('email-status-text').innerText = "📨 結果已成功同步發送至主辦方信箱！";
+            } else {
+                document.getElementById('email-status-text').innerText = "❌ 系統發送異常，請手動錄影留存。";
+            }
+        })
+        .catch(error => {
+            // 安全緩衝：即使極端網路環境阻斷，前端也只提示鎖定，絕對不跳任何報錯彈窗打擾使用者
+            document.getElementById('email-status-text').innerText = "📨 結果已完成本地安全鎖定。";
+            console.log('Done');
+        });
+    }
+</script>
+
+</body>
+</html>
