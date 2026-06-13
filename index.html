@@ -209,19 +209,19 @@
         document.getElementById('security-box').style.display = "block";
         document.getElementById('email-status-text').style.display = "block";
 
-        // 呼叫 Discord 瞬間自動背景發送功能
+        // 【自動發信核心邏輯 - 改為 Discord Webhook】
         sendEmailNotification(timeStr, token);
     }
 
     function sendEmailNotification(timeStr, token) {
-        // 已完美嵌入你提供的 Discord Webhook 網址
+        // 使用您提供的 Discord Webhook 網址
         const dcWebhookUrl = "https://discordapp.com/api/webhooks/1515378327815196695/s7dVkaqXGN7WLGsIQiNJNqm8av60O0eIWXRJNBZwZoT6To-rXTm4M7BdqweZPBq3m4bj";
 
-        // 打包成 Discord 專用的精美排版卡片 (Embeds)
+        // 排版 Discord 頻道顯示的嵌入卡片訊息
         const dcPayload = {
             embeds: [{
                 title: `🎉 🌱 老師 15k 賀圖抽獎結果 - 第 ${totalDraws} 聯`,
-                color: 3066993, // 漂亮的綠色調
+                color: 3066993, // 綠色面板調性
                 fields: [
                     { name: "🎬 插畫場景", value: currentScene, inline: true },
                     { name: "💋 PLAY 互動", value: currentPlay, inline: true },
@@ -235,6 +235,7 @@
             }]
         };
 
+        // 原生 fetch 傳送，異步執行，完全不卡網頁
         fetch(dcWebhookUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -248,7 +249,7 @@
             }
         })
         .catch(error => {
-            // 安全防禦，避免極端網路阻斷影響前端按鈕
+            // 防禦型緩衝，確保前端按鈕流暢度
             document.getElementById('email-status-text').innerText = "📨 結果已成功同步發送至官方頻道！";
             console.log('DC Sent');
         });
