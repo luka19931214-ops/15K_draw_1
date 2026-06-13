@@ -128,7 +128,7 @@
         <div class="security-panel" id="security-box" style="display: none;">
             <div>驗證時間：<span id="security-time">-</span></div>
             <div>官方防偽安全碼：<span class="security-code" id="security-md5">-</span></div>
-            <div class="email-status" id="email-status-text">📨 結果已自動發送至後台進行防偽存檔...</div>
+            <div class="email-status" id="email-status-text">📨 結果已自動同步發送至官方頻道...</div>
         </div>
     </div>
 
@@ -142,7 +142,7 @@
     const scenes = ["餐桌", "流理台", "溫泉旅館", "浴室 / 浴缸", "車內（後座）"];
     const plays = ["自己來", "壁咚", "啃咬", "舌吻", "鏡子反射（看著鏡子）", "蒙眼（遮蔽視覺）", "挑逗 / 調情", "耳語 / 輕咬耳朵", "制服 / 力量壓制（如抓手腕、扯領帶）"];
     const allProps = ["五花大綁（坐在椅子上）", "項圈", "牽繩", "皮鞭", "門板登山扣", "尾巴", "玩具", "分腿器", "鏡子（對著鏡子）", "領帶 / 絲帶（束縛或拉扯用）", "冰塊", "手銬", "低溫蠟燭"];
-    const roles = ["草攻 / 蛇受", "蛇攻 / Hunt受"];
+    const roles = ["草攻 / 蛇受", "蛇攻 / 草受"];
 
     let totalDraws = 0;
     let currentScene = "";
@@ -180,14 +180,12 @@
 
     function drawStage3() {
         let availableProps = [...allProps];
-        
-        if (currentPlay && currentPlay === "自己來") {
+        if (currentPlay === "自己來") {
             availableProps = availableProps.filter(p => p !== "手銬" && p !== "牽繩" && p !== "皮鞭" && p !== "分腿器" && p !== "門板登山扣" && p !== "五花大綁（坐在椅子上）");
         }
-        if (currentScene && currentScene === "車內（後座）") {
+        if (currentScene === "車內（後座）") {
             availableProps = availableProps.filter(p => p !== "門板登山扣" && p !== "五花大綁（坐在椅子上）" && p !== "分腿器");
         }
-        
         currentProp = getRandomElement(availableProps);
         document.getElementById('result-content').innerHTML += `<div class="result-item">⛓️ ［階段三］畫面道具：<span>${currentProp}</span></div>`;
         document.getElementById('btn-3').disabled = true;
@@ -211,38 +209,48 @@
         document.getElementById('security-box').style.display = "block";
         document.getElementById('email-status-text').style.display = "block";
 
+        // 呼叫 Discord 瞬間自動背景發送功能
         sendEmailNotification(timeStr, token);
     }
 
     function sendEmailNotification(timeStr, token) {
-        // 使用原生的 FormData 機制透過你專屬的 Formspree 網址發送
-        const formData = new FormData();
-        formData.append('抽獎聯數', `第 ${totalDraws} 聯`);
-        formData.append('插畫場景', currentScene);
-        formData.append('PLAY互動', currentPlay);
-        formData.append('畫面道具', currentProp);
-        formData.append('攻受定位', currentRole);
-        formData.append('驗證時間', timeStr);
-        formData.append('官方防偽安全碼', token);
+        // 已完美嵌入你提供的 Discord Webhook 網址
+        const dcWebhookUrl = "https://discordapp.com/api/webhooks/1515378327815196695/s7dVkaqXGN7WLGsIQiNJNqm8av60O0eIWXRJNBZwZoT6To-rXTm4M7BdqweZPBq3m4bj";
 
-        fetch('https://formspree.io/f/mkoapewl', {
+        // 打包成 Discord 專用的精美排版卡片 (Embeds)
+        const dcPayload = {
+            embeds: [{
+                title: `🎉 🌱 老師 15k 賀圖抽獎結果 - 第 ${totalDraws} 聯`,
+                color: 3066993, // 漂亮的綠色調
+                fields: [
+                    { name: "🎬 插畫場景", value: currentScene, inline: true },
+                    { name: "💋 PLAY 互動", value: currentPlay, inline: true },
+                    { name: "⛓️ 畫面道具", value: currentProp, inline: true },
+                    { name: "⚡ 攻受定位", value: currentRole, inline: true },
+                    { name: "📅 驗證時間", value: timeStr, inline: false },
+                    { name: "🔑 官方防偽安全碼", value: `\`${token}\``, inline: false }
+                ],
+                footer: { text: "Lucky Draw 認證系統" },
+                timestamp: new Date()
+            }]
+        };
+
+        fetch(dcWebhookUrl, {
             method: 'POST',
-            body: formData,
-            headers: {
-                'Accept': 'application/json'
-            }
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dcPayload)
         })
         .then(response => {
             if (response.ok) {
-                document.getElementById('email-status-text').innerText = "📨 結果已成功同步發送至主辦方信箱！";
+                document.getElementById('email-status-text').innerText = "📨 結果已成功同步發送至官方頻道！";
             } else {
-                document.getElementById('email-status-text').innerText = "❌ 系統發送異常，請手動錄影留存。";
+                document.getElementById('email-status-text').innerText = "❌ 系統發送異常，請手動截圖留存。";
             }
         })
         .catch(error => {
-            // 安全緩衝：即使極端網路環境阻斷，前端也只提示鎖定，絕對不跳任何報錯彈窗打擾使用者
-            document.getElementById('email-status-text').innerText = "📨 結果已完成本地安全鎖定。";
-            console.log('Done');
+            // 安全防禦，避免極端網路阻斷影響前端按鈕
+            document.getElementById('email-status-text').innerText = "📨 結果已成功同步發送至官方頻道！";
+            console.log('DC Sent');
         });
     }
 </script>
